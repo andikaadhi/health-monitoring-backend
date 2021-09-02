@@ -14,13 +14,13 @@ app.use(express.json());
 // app.use(require('./config/cors'));
 
 // Log request
-app.use(require('./middleware/httpLog'));
+app.use(require('./middlewares/httpLogger'));
 
 // Routes
 app.use('/', require('./routes'));
 
 // Error Handling
-app.use(require('./middleware/errorHandler'));
+app.use(require('./middlewares/errorHandler'));
 
 // LISTEN - start serve
 app.listen(PORT, () => {
