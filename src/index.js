@@ -11,7 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // cors
-// app.use(require('./config/cors'));
+app.use(require('./config/cors'));
 
 // Log request
 app.use(require('./middlewares/httpLogger'));

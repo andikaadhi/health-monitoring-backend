@@ -2,7 +2,7 @@ const { db } = require('../config');
 
 // eslint-disable-next-line import/order
 const knex = require('knex')({
-  client: 'mysql',
+  client: 'pg',
   connection: {
     host: db.host,
     port: db.port,

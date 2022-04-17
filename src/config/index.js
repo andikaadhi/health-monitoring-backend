@@ -9,4 +9,7 @@ module.exports = {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
   },
+  auth: {
+    token_jwt_key: process.env.AUTH_TOKEN_JWT_KEY,
+  },
 };

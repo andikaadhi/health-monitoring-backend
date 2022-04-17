@@ -6,7 +6,7 @@ const { errLogger } = require('../logger/modules/errorLogger');
  * @param {*} res express response object
  * @param {*} next
  */
-module.exports = (err, req, res) => {
+module.exports = (err, req, res, next) => {
   try {
     if (err)
       errLogger.error({
@@ -21,5 +21,5 @@ module.exports = (err, req, res) => {
       stack: error.stack,
     });
   }
-  res.sendStatus(500);
+  res.send(500);
 };
