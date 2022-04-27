@@ -1,13 +1,13 @@
-const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+const { InfluxDB } = require('@influxdata/influxdb-client');
 
-// You can generate an API token from the "API Tokens Tab" in the UI
+// You can generate a Token from the "Tokens Tab" in the UI
 const token =
-  'YT_Zo5V-32Xbl5YDZHT1zrDUD34BJVwSB-4452nOERcjYiXfGuXK8MY9iCvieY1TuT_YR6BKG86h06GNTMqJtg==';
+  '0vPwAephzsp3XbfU4CPAlyqHluPkOa1hjxlrf_XmEjJq0VXpX7vc_5tyGVjeHsPguxx1Vqhbz4b95mpQTj3MkA==';
 const org = 'Oximeter Project';
 const bucket = 'Oximeter';
 
 const client = new InfluxDB({
-  url: 'http://13.250.103.150:8086',
+  url: 'http://18.141.56.229:8086',
   token,
 });
 
@@ -19,30 +19,27 @@ const getPatientsHealthUpdate = ({ onRowData, skip = 0, limit = 10 }) =>
     const query = `
       data_bpm = from(bucket: "${bucket}") 
       |> range(start: -48h) 
-      |> group(columns: ["user_id"])
       |> filter(fn: (r) => r._field == "bpm")
-      |> sort(columns: ["_value"])
+      |> group(columns: ["sensor_id"])
       |> last()
       |> limit(n: ${limit}, offset: ${skip})
 
       data_spo2 = from(bucket: "${bucket}") 
       |> range(start: -48h) 
-      |> group(columns: ["user_id"])
       |> filter(fn: (r) => r._field == "spo2")
-      |> sort(columns: ["_value"])
+      |> group(columns: ["sensor_id"])
       |> last()
       |> limit(n: ${limit}, offset: ${skip})
 
-      join(
-        tables: {bpm: data_bpm, spo2: data_spo2},
-        on: ["user_id"],
-        method: "inner",
-      )
+      join(tables: {bpm: data_bpm, spo2: data_spo2},on: ["sensor_id"],method: "inner")
+      |> map(fn: (r) => ({sensor: r.sensor_id, _value_spo2: r._value_spo2, _value_bpm: r._value_bpm, sort_value: r._value_spo2 }))
+      |> sort(columns: ["sort_value"])
     `;
 
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
+        console.log(o);
         results.push(o);
         onRowData(o);
       },
@@ -55,7 +52,7 @@ const getPatientsHealthUpdate = ({ onRowData, skip = 0, limit = 10 }) =>
     });
   });
 
-const getPatientLatestHealthUpdate = (patientId) =>
+const getPatientLatestHealthUpdate = (sensorId) =>
   new Promise((resolve, reject) => {
     const queryApi = client.getQueryApi(org);
 
@@ -63,21 +60,21 @@ const getPatientLatestHealthUpdate = (patientId) =>
     const query = `
       data_bpm = from(bucket: "${bucket}") 
       |> range(start: 2000-05-22T23:30:00Z) 
-      |> group(columns: ["user_id"])
-      |> filter(fn: (r) => r._field == "bpm" and r.user_id == "${patientId}")
+      |> group(columns: ["sensor_id"])
+      |> filter(fn: (r) => r._field == "bpm" and r.sensor_id == "${sensorId}")
       |> last()
       |> limit(n: 1, offset: 0)
 
       data_spo2 = from(bucket: "${bucket}") 
       |> range(start: 2000-05-22T23:30:00Z) 
-      |> group(columns: ["user_id"])
-      |> filter(fn: (r) => r._field == "spo2" and r.user_id == "${patientId}")
+      |> group(columns: ["sensor_id"])
+      |> filter(fn: (r) => r._field == "spo2" and r.sensor_id == "${sensorId}")
       |> last()
       |> limit(n: 1, offset: 0)
 
       join(
         tables: {bpm: data_bpm, spo2: data_spo2},
-        on: ["user_id"],
+        on: ["sensor_id"],
         method: "inner",
       )
     `;
@@ -97,7 +94,7 @@ const getPatientLatestHealthUpdate = (patientId) =>
     });
   });
 
-const getPatientHealthBpmHistory = (patientId) =>
+const getPatientHealthBpmHistory = (sensorId) =>
   new Promise((resolve, reject) => {
     const queryApi = client.getQueryApi(org);
 
@@ -105,7 +102,7 @@ const getPatientHealthBpmHistory = (patientId) =>
     const query = `
     from(bucket: "${bucket}") 
     |> range(start: 2000-05-22T23:30:00Z) 
-    |> filter(fn: (r) => r._field == "bpm" and r.user_id == "${patientId}")
+    |> filter(fn: (r) => r._field == "bpm" and r.sensor_id == "${sensorId}")
     |> limit(n: 10, offset: 0)
   `;
 
@@ -123,7 +120,7 @@ const getPatientHealthBpmHistory = (patientId) =>
     });
   });
 
-const getPatientHealthSpO2History = (patientId) =>
+const getPatientHealthSpO2History = (sensorId) =>
   new Promise((resolve, reject) => {
     const queryApi = client.getQueryApi(org);
 
@@ -131,7 +128,7 @@ const getPatientHealthSpO2History = (patientId) =>
     const query = `
     from(bucket: "${bucket}") 
     |> range(start: 2000-05-22T23:30:00Z) 
-    |> filter(fn: (r) => r._field == "spo2" and r.user_id == "${patientId}")
+    |> filter(fn: (r) => r._field == "spo2" and r.sensor_id == "${sensorId}")
     |> limit(n: 10, offset: 0)
   `;
 

@@ -2,19 +2,24 @@ const Db = require('../../models/health');
 const PatientDb = require('../../models/patient');
 
 const getPatientsHealthUpdate = async () => {
-  const patientIds = [];
+  const sensorIds = [];
   const updates = await Db.getPatientsHealthUpdate({
-    onRowData: (data) => patientIds.push(Number(data.user_id)),
+    onRowData: (data) => sensorIds.push(Number(data.sensor)),
   });
 
-  const patients = await PatientDb.getPatients({ patientIds });
+  if (sensorIds.length === 0) return [];
+
+  const patients = await PatientDb.getPatients({ sensorIds });
 
   return updates.map((update, index) => ({ ...update, patient_data: patients[index] }));
 };
 
 const getPatientHealthDetail = async (patientId) => {
   const [patient] = await PatientDb.getPatients({ patientIds: [Number(patientId)] });
-  const healthUpdate = await Db.getPatientLatestHealthUpdate(patientId);
+
+  if (!patient) return {};
+
+  const healthUpdate = await Db.getPatientLatestHealthUpdate(patient.sensor_id);
 
   return {
     ...patient,
@@ -23,9 +28,13 @@ const getPatientHealthDetail = async (patientId) => {
 };
 
 const getPatientHealthHistory = async (patientId) => {
+  const [patient] = await PatientDb.getPatientSensorId(patientId);
+
+  if (!patient) return {};
+
   const [bpmData, spo2Data] = await Promise.all([
-    Db.getPatientHealthBpmHistory(patientId),
-    Db.getPatientHealthSpO2History(patientId),
+    Db.getPatientHealthBpmHistory(patient.sensor_id),
+    Db.getPatientHealthSpO2History(patient.sensor_id),
   ]);
 
   return { bpm: bpmData, spo2: spo2Data };
