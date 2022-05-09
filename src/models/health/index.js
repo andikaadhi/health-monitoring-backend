@@ -39,7 +39,6 @@ const getPatientsHealthUpdate = ({ onRowData, skip = 0, limit = 10 }) =>
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
-        console.log(o);
         results.push(o);
         onRowData(o);
       },
