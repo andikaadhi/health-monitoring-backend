@@ -12,7 +12,7 @@ const getPatients = ({ patientIds, sensorIds } = {}) => {
 
   if (patientIds && patientIds.length > 0)
     query
-      .whereIn('patient_id', patientIds)
+      .whereIn('patient.patient_id', patientIds)
       .orderBy(db.raw(`array_position(array[??], patient.patient_id)`, [patientIds]));
 
   return query;

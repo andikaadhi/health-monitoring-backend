@@ -1,13 +1,12 @@
 const { InfluxDB } = require('@influxdata/influxdb-client');
 
 // You can generate a Token from the "Tokens Tab" in the UI
-const token =
-  '0vPwAephzsp3XbfU4CPAlyqHluPkOa1hjxlrf_XmEjJq0VXpX7vc_5tyGVjeHsPguxx1Vqhbz4b95mpQTj3MkA==';
-const org = 'Oximeter Project';
-const bucket = 'Oximeter';
+const token = process.env.INFLUX_DB_TOKEN;
+const org = process.env.INFLUX_DB_ORG;
+const bucket = process.env.INFLUX_DB_BUCKET;
 
 const client = new InfluxDB({
-  url: 'http://18.141.56.229:8086',
+  url: process.env.INFLUX_DB_HOST,
   token,
 });
 
@@ -58,14 +57,14 @@ const getPatientLatestHealthUpdate = (sensorId) =>
     const results = [];
     const query = `
       data_bpm = from(bucket: "${bucket}") 
-      |> range(start: 2000-05-22T23:30:00Z) 
+      |> range(start: -1w)
       |> group(columns: ["sensor_id"])
       |> filter(fn: (r) => r._field == "bpm" and r.sensor_id == "${sensorId}")
       |> last()
       |> limit(n: 1, offset: 0)
 
       data_spo2 = from(bucket: "${bucket}") 
-      |> range(start: 2000-05-22T23:30:00Z) 
+      |> range(start: -1w)
       |> group(columns: ["sensor_id"])
       |> filter(fn: (r) => r._field == "spo2" and r.sensor_id == "${sensorId}")
       |> last()

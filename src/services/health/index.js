@@ -11,7 +11,9 @@ const getPatientsHealthUpdate = async () => {
 
   const patients = await PatientDb.getPatients({ sensorIds });
 
-  return updates.map((update, index) => ({ ...update, patient_data: patients[index] }));
+  return updates
+    .map((update, index) => ({ ...update, patient_data: patients[index] }))
+    .filter((data) => Boolean(data.patient_data));
 };
 
 const getPatientHealthDetail = async (patientId) => {
