@@ -14,31 +14,40 @@ const getPatientsHealthUpdate = ({ onRowData, skip = 0, limit = 10 }) =>
   new Promise((resolve, reject) => {
     const queryApi = client.getQueryApi(org);
 
-    const results = [];
+    const results = {};
     const query = `
       data_bpm = from(bucket: "${bucket}") 
       |> range(start: -48h) 
       |> filter(fn: (r) => r._field == "bpm")
       |> group(columns: ["sensor_id"])
       |> last()
-      |> limit(n: ${limit}, offset: ${skip})
+      |> tail(n: ${limit}, offset: ${skip})
 
       data_spo2 = from(bucket: "${bucket}") 
       |> range(start: -48h) 
       |> filter(fn: (r) => r._field == "spo2")
       |> group(columns: ["sensor_id"])
       |> last()
-      |> limit(n: ${limit}, offset: ${skip})
+      |> tail(n: ${limit}, offset: ${skip})
 
       join(tables: {bpm: data_bpm, spo2: data_spo2},on: ["sensor_id"],method: "inner")
       |> map(fn: (r) => ({sensor: r.sensor_id, _value_spo2: r._value_spo2, _value_bpm: r._value_bpm, sort_value: r._value_spo2 }))
       |> sort(columns: ["sort_value"])
     `;
 
+    //   const query = `
+    //   from(bucket: "${bucket}")
+    //   |> range(start: -48h)
+    //   |> filter(fn: (r) => r._field == "spo2")
+    //   |> group(columns: ["sensor_id"])
+    //   |> last()
+    //   |> tail(n: ${limit}, offset: ${skip})
+    // `;
+
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
-        results.push(o);
+        results[o.sensor] = o;
         onRowData(o);
       },
       error(error) {
@@ -99,9 +108,9 @@ const getPatientHealthBpmHistory = (sensorId) =>
     const results = [];
     const query = `
     from(bucket: "${bucket}") 
-    |> range(start: 2000-05-22T23:30:00Z) 
+    |> range(start: -1w) 
     |> filter(fn: (r) => r._field == "bpm" and r.sensor_id == "${sensorId}")
-    |> limit(n: 10, offset: 0)
+    |> tail(n: 10, offset: 0)
   `;
 
     queryApi.queryRows(query, {
@@ -125,9 +134,9 @@ const getPatientHealthSpO2History = (sensorId) =>
     const results = [];
     const query = `
     from(bucket: "${bucket}") 
-    |> range(start: 2000-05-22T23:30:00Z) 
+    |> range(start: -1w) 
     |> filter(fn: (r) => r._field == "spo2" and r.sensor_id == "${sensorId}")
-    |> limit(n: 10, offset: 0)
+    |> tail(n: 10, offset: 0)
   `;
 
     queryApi.queryRows(query, {
