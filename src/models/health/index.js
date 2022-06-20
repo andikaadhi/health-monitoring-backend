@@ -17,14 +17,14 @@ const getPatientsHealthUpdate = ({ onRowData, skip = 0, limit = 10 }) =>
     const results = {};
     const query = `
       data_bpm = from(bucket: "${bucket}") 
-      |> range(start: -48h) 
+      |> range(start: -1w) 
       |> filter(fn: (r) => r._field == "bpm")
       |> group(columns: ["sensor_id"])
       |> last()
       |> tail(n: ${limit}, offset: ${skip})
 
       data_spo2 = from(bucket: "${bucket}") 
-      |> range(start: -48h) 
+      |> range(start: -1w) 
       |> filter(fn: (r) => r._field == "spo2")
       |> group(columns: ["sensor_id"])
       |> last()
@@ -47,6 +47,7 @@ const getPatientsHealthUpdate = ({ onRowData, skip = 0, limit = 10 }) =>
     queryApi.queryRows(query, {
       next(row, tableMeta) {
         const o = tableMeta.toObject(row);
+        o.is_critical = o._value_spo2 < 90;
         results[o.sensor] = o;
         onRowData(o);
       },
